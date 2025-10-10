@@ -9,6 +9,10 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Map from "./pages/Map";
 import Dashboard from "./pages/Dashboard";
+import Weather from "./pages/Weather";
+import Emergency from "./pages/Emergency";
+import Safety from "./pages/Safety";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,10 +32,10 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/map" element={<Map />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/weather" element={<Index />} />
-              <Route path="/emergency" element={<Index />} />
-              <Route path="/safety" element={<Index />} />
-              <Route path="/settings" element={<Index />} />
+              <Route path="/weather" element={<Weather />} />
+              <Route path="/emergency" element={<Emergency />} />
+              <Route path="/safety" element={<Safety />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
