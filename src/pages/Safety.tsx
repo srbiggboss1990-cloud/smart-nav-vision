@@ -1,32 +1,77 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Camera, Eye, AlertTriangle, CheckCircle2, Zap, Volume2 } from "lucide-react";
+import { Camera, Eye, AlertTriangle, CheckCircle2, Zap, Volume2, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import AIAssistant from "@/components/AIAssistant";
 
 export default function Safety() {
   const [monitoringActive, setMonitoringActive] = useState(false);
   const [alertLevel, setAlertLevel] = useState<"safe" | "warning" | "danger">("safe");
+  const [alertCount, setAlertCount] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
-  const toggleMonitoring = () => {
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
+
+  const toggleMonitoring = async () => {
     const newState = !monitoringActive;
-    setMonitoringActive(newState);
     
     if (newState) {
-      toast.success("Safety Monitor Activated", {
-        description: "AI-powered fatigue detection is now running",
-      });
-      // Simulate random alert changes
-      const interval = setInterval(() => {
-        const levels: Array<"safe" | "warning" | "danger"> = ["safe", "safe", "safe", "warning", "safe"];
-        setAlertLevel(levels[Math.floor(Math.random() * levels.length)]);
-      }, 3000);
-      return () => clearInterval(interval);
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: "user" } 
+        });
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          setStream(mediaStream);
+          setMonitoringActive(true);
+          
+          toast.success("Safety Monitor Activated", {
+            description: "AI-powered fatigue detection is now running",
+          });
+          
+          // Simulate fatigue detection
+          const interval = setInterval(() => {
+            const randomLevel = Math.random();
+            if (randomLevel > 0.85) {
+              setAlertLevel("danger");
+              setAlertCount(prev => prev + 1);
+              toast.error("High fatigue detected! Please take a break.");
+            } else if (randomLevel > 0.7) {
+              setAlertLevel("warning");
+              setAlertCount(prev => prev + 1);
+              toast.warning("Mild fatigue detected. Consider taking a break.");
+            } else {
+              setAlertLevel("safe");
+            }
+          }, 5000);
+          
+          return () => clearInterval(interval);
+        }
+      } catch (error) {
+        toast.error("Failed to access camera. Please grant camera permissions.");
+        console.error("Camera error:", error);
+      }
     } else {
-      toast.info("Safety Monitor Deactivated");
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      setMonitoringActive(false);
       setAlertLevel("safe");
+      toast.info("Safety Monitor Deactivated");
     }
   };
 
@@ -61,7 +106,7 @@ export default function Safety() {
     { label: "Blink Rate", value: monitoringActive ? "15/min" : "--", status: "normal" },
     { label: "Gaze Focus", value: monitoringActive ? "92%" : "--", status: "good" },
     { label: "Head Position", value: monitoringActive ? "Stable" : "--", status: "normal" },
-    { label: "Attention Level", value: monitoringActive ? "High" : "--", status: "good" },
+    { label: "Alerts Today", value: alertCount.toString(), status: "info" },
   ];
 
   return (
@@ -103,35 +148,36 @@ export default function Safety() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="aspect-video bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-              {monitoringActive ? (
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 animate-pulse">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className={`w-48 h-48 rounded-full border-4 transition-colors duration-300 ${
-                      alertLevel === "danger" ? "border-destructive" :
-                      alertLevel === "warning" ? "border-warning" :
-                      "border-success"
-                    } animate-pulse-glow`}>
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Eye className={`h-16 w-16 ${
-                          alertLevel === "danger" ? "text-destructive" :
-                          alertLevel === "warning" ? "text-warning" :
-                          "text-success"
-                        }`} />
-                      </div>
-                    </div>
+              {monitoringActive && stream ? (
+                <>
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                    LIVE
                   </div>
-                  <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-white text-sm font-medium">
+                  <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-white text-sm font-medium bg-black/50 px-3 py-2 rounded">
                     <span className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                      <div className={`h-2 w-2 rounded-full animate-pulse ${
+                        alertLevel === "danger" ? "bg-destructive" :
+                        alertLevel === "warning" ? "bg-warning" : "bg-success"
+                      }`} />
                       Monitoring Active
                     </span>
-                    <span>Using TensorFlow.js FaceMesh</span>
+                    <span>AI Analysis</span>
                   </div>
-                </div>
+                </>
               ) : (
                 <div className="text-center space-y-3">
                   <Camera className="h-12 w-12 mx-auto text-muted-foreground" />
-                  <p className="text-muted-foreground">Camera feed will appear here</p>
+                  <p className="text-muted-foreground">
+                    {monitoringActive ? "Loading camera..." : "Camera feed will appear here"}
+                  </p>
                 </div>
               )}
             </div>
@@ -141,11 +187,21 @@ export default function Safety() {
               onClick={toggleMonitoring}
               className={`w-full transition-all duration-300 ${
                 monitoringActive
-                  ? 'bg-muted hover:bg-muted/80 text-foreground'
+                  ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
                   : 'bg-gradient-primary hover:opacity-90 shadow-glow'
               }`}
             >
-              {monitoringActive ? 'Stop Monitoring' : 'Start Monitoring'}
+              {monitoringActive ? (
+                <>
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Stop Monitoring
+                </>
+              ) : (
+                <>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Start Monitoring
+                </>
+              )}
             </Button>
 
             <p className="text-xs text-muted-foreground text-center">
