@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Ambulance, Radio, MapPin, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import AIAssistant from "@/components/AIAssistant";
 
 export default function Emergency() {
   const [emergencyMode, setEmergencyMode] = useState(false);
@@ -33,7 +34,9 @@ export default function Emergency() {
   ];
 
   return (
-    <div className="container py-6 space-y-6">
+    <>
+      <AIAssistant />
+      <div className="container py-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Emergency Response Mode</h1>
         <p className="text-muted-foreground mt-2">
@@ -191,6 +194,7 @@ export default function Emergency() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }

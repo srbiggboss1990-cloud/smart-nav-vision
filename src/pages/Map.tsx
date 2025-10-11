@@ -4,17 +4,67 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Navigation, Satellite, Layers, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import AIAssistant from "@/components/AIAssistant";
+
+const TOMTOM_API_KEY = "7e5bf4b9-c4bd-4a84-8b99-8ce536ce8e0f";
 
 export default function Map() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
   const [destination, setDestination] = useState("");
+  const mapRef = useRef<any>(null);
 
   useEffect(() => {
-    toast.info("Map integration will use TomTom API - API key required");
-    // TomTom Map initialization will go here
-    // This is a placeholder for the actual map implementation
+    if (!mapContainer.current) return;
+
+    // Load TomTom SDK
+    const script = document.createElement('script');
+    script.src = `https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js`;
+    script.async = true;
+    
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css';
+    
+    document.head.appendChild(link);
+    
+    script.onload = () => {
+      try {
+        // @ts-ignore
+        const tt = window.tt;
+        
+        mapRef.current = tt.map({
+          key: TOMTOM_API_KEY,
+          container: mapContainer.current,
+          center: [-74.006, 40.7128], // New York
+          zoom: 12,
+          style: mapStyle === "satellite" ? "satellite" : "basic_main"
+        });
+
+        // Add traffic flow
+        mapRef.current.showTrafficFlow();
+        
+        toast.success("Live traffic map loaded!");
+      } catch (error) {
+        console.error("Map initialization error:", error);
+        toast.error("Failed to initialize map");
+      }
+    };
+    
+    document.body.appendChild(script);
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    if (mapRef.current && mapStyle) {
+      mapRef.current.setStyle(mapStyle === "satellite" ? "satellite" : "basic_main");
+    }
+  }, [mapStyle]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +72,9 @@ export default function Map() {
   };
 
   return (
-    <div className="container py-6 space-y-6">
+    <>
+      <AIAssistant />
+      <div className="container py-6 space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Live Traffic Map</h1>
@@ -125,5 +177,6 @@ export default function Map() {
         </div>
       </div>
     </div>
+    </>
   );
 }

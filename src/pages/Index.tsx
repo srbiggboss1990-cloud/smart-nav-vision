@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Map, Shield, Zap, Brain, AlertTriangle, Cloud } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import AIAssistant from "@/components/AIAssistant";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -52,7 +53,9 @@ export default function Index() {
   ];
 
   return (
-    <div className="container py-12 space-y-16">
+    <>
+      <AIAssistant />
+      <div className="container py-12 space-y-16">
       {/* Hero Section */}
       <section className="text-center space-y-6 py-12">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20 text-sm font-medium text-primary animate-scale-in">
@@ -135,6 +138,7 @@ export default function Index() {
           Get Started Free
         </Button>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

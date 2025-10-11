@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Camera, Eye, AlertTriangle, CheckCircle2, Zap, Volume2 } from "lucide-react";
 import { toast } from "sonner";
+import AIAssistant from "@/components/AIAssistant";
 
 export default function Safety() {
   const [monitoringActive, setMonitoringActive] = useState(false);
@@ -64,7 +65,9 @@ export default function Safety() {
   ];
 
   return (
-    <div className="container py-6 space-y-6">
+    <>
+      <AIAssistant />
+      <div className="container py-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Driver Safety Monitor</h1>
         <p className="text-muted-foreground mt-2">
@@ -254,6 +257,7 @@ export default function Safety() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   );
 }
