@@ -12,8 +12,14 @@ export default function Safety() {
   const [alertCount, setAlertCount] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  
+  // Dynamic metrics state
+  const [blinkRate, setBlinkRate] = useState(15);
+  const [gazeFocus, setGazeFocus] = useState(92);
+  const [headPosition, setHeadPosition] = useState("Stable");
 
   const intervalRef = useRef<number | null>(null);
+  const metricsIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -22,6 +28,9 @@ export default function Safety() {
       }
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+      }
+      if (metricsIntervalRef.current) {
+        clearInterval(metricsIntervalRef.current);
       }
     };
   }, [stream]);
@@ -55,7 +64,26 @@ export default function Safety() {
           description: "AI-powered fatigue detection is now running",
         });
 
-        // Start simulated fatigue detection loop
+        // Start simulated AI analysis - update metrics continuously
+        metricsIntervalRef.current = window.setInterval(() => {
+          // Simulate realistic metric variations
+          setBlinkRate(prev => {
+            const variation = Math.random() * 4 - 2; // -2 to +2
+            return Math.max(8, Math.min(20, prev + variation));
+          });
+          
+          setGazeFocus(prev => {
+            const variation = Math.random() * 8 - 4; // -4 to +4
+            return Math.max(70, Math.min(98, prev + variation));
+          });
+          
+          setHeadPosition(() => {
+            const positions = ["Stable", "Stable", "Stable", "Slight Tilt", "Forward"];
+            return positions[Math.floor(Math.random() * positions.length)];
+          });
+        }, 1000); // Update every second for realistic feel
+
+        // Start fatigue detection alerts
         intervalRef.current = window.setInterval(() => {
           const randomLevel = Math.random();
           if (randomLevel > 0.85) {
@@ -79,6 +107,10 @@ export default function Safety() {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      if (metricsIntervalRef.current) {
+        clearInterval(metricsIntervalRef.current);
+        metricsIntervalRef.current = null;
+      }
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
@@ -88,6 +120,10 @@ export default function Safety() {
       }
       setMonitoringActive(false);
       setAlertLevel("safe");
+      // Reset metrics
+      setBlinkRate(15);
+      setGazeFocus(92);
+      setHeadPosition("Stable");
       toast.info("Safety Monitor Deactivated");
     }
   };
@@ -120,10 +156,26 @@ export default function Safety() {
   ];
 
   const safetyMetrics = [
-    { label: "Blink Rate", value: monitoringActive ? "15/min" : "--", status: "normal" },
-    { label: "Gaze Focus", value: monitoringActive ? "92%" : "--", status: "good" },
-    { label: "Head Position", value: monitoringActive ? "Stable" : "--", status: "normal" },
-    { label: "Alerts Today", value: alertCount.toString(), status: "info" },
+    { 
+      label: "Blink Rate", 
+      value: monitoringActive ? `${Math.round(blinkRate)}/min` : "--", 
+      status: blinkRate < 10 ? "warning" : "normal" 
+    },
+    { 
+      label: "Gaze Focus", 
+      value: monitoringActive ? `${Math.round(gazeFocus)}%` : "--", 
+      status: gazeFocus > 85 ? "good" : "warning" 
+    },
+    { 
+      label: "Head Position", 
+      value: monitoringActive ? headPosition : "--", 
+      status: headPosition === "Stable" ? "normal" : "warning" 
+    },
+    { 
+      label: "Alerts Today", 
+      value: alertCount.toString(), 
+      status: "info" 
+    },
   ];
 
   return (
@@ -207,7 +259,10 @@ export default function Safety() {
                       <Camera className="h-16 w-16 text-muted-foreground" />
                     </div>
                     <p className="text-muted-foreground text-lg">
-                      {monitoringActive ? "Loading camera..." : "Camera feed will appear here"}
+                      Camera feed will appear here
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Click "Start Monitoring" and allow camera access
                     </p>
                   </div>
                 )}
