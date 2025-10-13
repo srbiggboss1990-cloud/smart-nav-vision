@@ -26,6 +26,19 @@ export default function Safety() {
     };
   }, [stream]);
 
+  // Bind stream to video element once it's rendered and attempt playback
+  useEffect(() => {
+    if (monitoringActive && stream && videoRef.current) {
+      const v = videoRef.current;
+      v.srcObject = stream;
+      const tryPlay = async () => {
+        try { await v.play(); } catch (e) { /* autoplay blocked or not ready */ }
+      };
+      v.onloadedmetadata = tryPlay;
+      tryPlay();
+    }
+  }, [monitoringActive, stream]);
+
   const toggleMonitoring = async () => {
     const newState = !monitoringActive;
     
@@ -34,32 +47,29 @@ export default function Safety() {
         const mediaStream = await navigator.mediaDevices.getUserMedia({ 
           video: { facingMode: "user" } 
         });
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          setStream(mediaStream);
-          setMonitoringActive(true);
-          
-          toast.success("Safety Monitor Activated", {
-            description: "AI-powered fatigue detection is now running",
-          });
-          
-          // Simulate fatigue detection
-          intervalRef.current = window.setInterval(() => {
-            const randomLevel = Math.random();
-            if (randomLevel > 0.85) {
-              setAlertLevel("danger");
-              setAlertCount(prev => prev + 1);
-              toast.error("High fatigue detected! Please take a break.");
-            } else if (randomLevel > 0.7) {
-              setAlertLevel("warning");
-              setAlertCount(prev => prev + 1);
-              toast.warning("Mild fatigue detected. Consider taking a break.");
-            } else {
-              setAlertLevel("safe");
-            }
-          }, 5000);
-        }
+        // Set state first; video element will bind in effect
+        setStream(mediaStream);
+        setMonitoringActive(true);
+
+        toast.success("Safety Monitor Activated", {
+          description: "AI-powered fatigue detection is now running",
+        });
+
+        // Start simulated fatigue detection loop
+        intervalRef.current = window.setInterval(() => {
+          const randomLevel = Math.random();
+          if (randomLevel > 0.85) {
+            setAlertLevel("danger");
+            setAlertCount(prev => prev + 1);
+            toast.error("High fatigue detected! Please take a break.");
+          } else if (randomLevel > 0.7) {
+            setAlertLevel("warning");
+            setAlertCount(prev => prev + 1);
+            toast.warning("Mild fatigue detected. Consider taking a break.");
+          } else {
+            setAlertLevel("safe");
+          }
+        }, 5000);
       } catch (error) {
         toast.error("Failed to access camera. Please grant camera permissions.");
         console.error("Camera error:", error);
