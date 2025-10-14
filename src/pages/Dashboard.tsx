@@ -72,36 +72,51 @@ const environmentalData = [
 ];
 
 export default function Dashboard() {
-  const [animatedStats, setAnimatedStats] = useState(stats.map(s => ({ ...s, displayValue: 0 })));
+  const [liveStats, setLiveStats] = useState(stats);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
 
   useEffect(() => {
-    // Animate stat numbers on mount
-    const timers = stats.map((stat, index) => {
-      return setTimeout(() => {
-        setAnimatedStats(prev => {
-          const newStats = [...prev];
-          newStats[index] = { ...stat, displayValue: parseInt(stat.value) || 0 };
-          return newStats;
-        });
-      }, index * 100);
-    });
+    // Update stats every 3 seconds to simulate live data
+    const interval = setInterval(() => {
+      setLiveStats(prevStats => prevStats.map(stat => {
+        const currentValue = parseInt(stat.value) || 0;
+        const variation = Math.floor(Math.random() * 5) - 2; // -2 to +2
+        const newValue = Math.max(0, currentValue + variation);
+        
+        return {
+          ...stat,
+          value: stat.title.includes("mph") || stat.title.includes("Speed") 
+            ? `${newValue} mph` 
+            : stat.title.includes("%") || stat.title.includes("Flow")
+            ? `${Math.min(100, newValue)}%`
+            : newValue.toString()
+        };
+      }));
+      setLastUpdate(new Date());
+    }, 3000);
 
-    return () => timers.forEach(clearTimeout);
+    return () => clearInterval(interval);
   }, []);
 
   return (
     <>
       <AIAssistant />
       <div className="container py-6 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            Real-time traffic insights and statistics
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+            <p className="text-muted-foreground mt-2">
+              Real-time traffic insights and statistics
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+            <span>Live • Updated {lastUpdate.toLocaleTimeString()}</span>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => {
+          {liveStats.map((stat) => {
             const Icon = stat.icon;
             return (
               <Card

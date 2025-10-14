@@ -14,13 +14,15 @@ export default function Index() {
       description: "Real-time traffic monitoring with AI-powered route optimization",
       color: "text-primary",
       bgColor: "bg-primary/10",
+      route: "/map",
     },
     {
       icon: Brain,
-      title: "AI Violation Detection",
-      description: "Smart detection of traffic violations and unsafe driving behavior",
+      title: "AI Sign Reader",
+      description: "Instantly read and translate road signs using AI-powered OCR",
       color: "text-accent",
       bgColor: "bg-accent/10",
+      route: "/sign-reader",
     },
     {
       icon: Shield,
@@ -28,6 +30,7 @@ export default function Index() {
       description: "Fatigue and distraction detection using advanced AI",
       color: "text-success",
       bgColor: "bg-success/10",
+      route: "/safety",
     },
     {
       icon: AlertTriangle,
@@ -35,6 +38,7 @@ export default function Index() {
       description: "Priority routing for ambulances and emergency vehicles",
       color: "text-destructive",
       bgColor: "bg-destructive/10",
+      route: "/emergency",
     },
     {
       icon: Cloud,
@@ -42,6 +46,7 @@ export default function Index() {
       description: "Weather-based traffic prediction and route recommendations",
       color: "text-warning",
       bgColor: "bg-warning/10",
+      route: "/weather",
     },
     {
       icon: Zap,
@@ -49,6 +54,7 @@ export default function Index() {
       description: "Instant notifications for accidents, congestion, and hazards",
       color: "text-primary",
       bgColor: "bg-primary/10",
+      route: "/dashboard",
     },
   ];
 
@@ -108,6 +114,7 @@ export default function Index() {
             return (
               <Card
                 key={feature.title}
+                onClick={() => navigate(feature.route)}
                 className="shadow-card transition-all duration-300 hover:scale-105 hover:shadow-glow cursor-pointer group"
               >
                 <CardContent className="p-6 space-y-4">
