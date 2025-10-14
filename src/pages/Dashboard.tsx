@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingUp, AlertTriangle, Activity } from "lucide-react";
 import AIAssistant from "@/components/AIAssistant";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { useState, useEffect } from "react";
 
 const stats = [
   {
@@ -37,7 +39,56 @@ const stats = [
   },
 ];
 
+// Weekly accident trends data
+const weeklyAccidentData = [
+  { day: "Mon", accidents: 12, congestion: 45, airQuality: 78 },
+  { day: "Tue", accidents: 19, congestion: 62, airQuality: 72 },
+  { day: "Wed", accidents: 15, congestion: 55, airQuality: 75 },
+  { day: "Thu", accidents: 22, congestion: 70, airQuality: 68 },
+  { day: "Fri", accidents: 28, congestion: 85, airQuality: 65 },
+  { day: "Sat", accidents: 18, congestion: 48, airQuality: 80 },
+  { day: "Sun", accidents: 14, congestion: 38, airQuality: 85 },
+];
+
+// Hourly congestion data
+const hourlyCongestionData = [
+  { time: "6AM", level: 20 },
+  { time: "9AM", level: 85 },
+  { time: "12PM", level: 60 },
+  { time: "3PM", level: 70 },
+  { time: "6PM", level: 90 },
+  { time: "9PM", level: 40 },
+  { time: "12AM", level: 15 },
+];
+
+// Environmental data
+const environmentalData = [
+  { time: "6AM", temperature: 65, humidity: 70, airQuality: 85 },
+  { time: "9AM", temperature: 72, humidity: 65, airQuality: 78 },
+  { time: "12PM", temperature: 80, humidity: 55, airQuality: 70 },
+  { time: "3PM", temperature: 85, humidity: 50, airQuality: 68 },
+  { time: "6PM", temperature: 78, humidity: 60, airQuality: 72 },
+  { time: "9PM", temperature: 70, humidity: 68, airQuality: 80 },
+];
+
 export default function Dashboard() {
+  const [animatedStats, setAnimatedStats] = useState(stats.map(s => ({ ...s, displayValue: 0 })));
+
+  useEffect(() => {
+    // Animate stat numbers on mount
+    const timers = stats.map((stat, index) => {
+      return setTimeout(() => {
+        setAnimatedStats(prev => {
+          const newStats = [...prev];
+          newStats[index] = { ...stat, displayValue: parseInt(stat.value) || 0 };
+          return newStats;
+        });
+      }, index * 100);
+    });
+
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
   return (
     <>
       <AIAssistant />
@@ -75,6 +126,95 @@ export default function Dashboard() {
             );
           })}
         </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card className="shadow-card hover:shadow-glow transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Weekly Accident Trends
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={weeklyAccidentData}>
+                  <defs>
+                    <linearGradient id="colorAccidents" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--destructive))" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="hsl(var(--destructive))" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))", 
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px"
+                    }} 
+                  />
+                  <Area type="monotone" dataKey="accidents" stroke="hsl(var(--destructive))" fillOpacity={1} fill="url(#colorAccidents)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card hover:shadow-glow transition-all duration-300">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-warning" />
+                Hourly Congestion Levels
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={hourlyCongestionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" />
+                  <YAxis stroke="hsl(var(--muted-foreground))" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "hsl(var(--card))", 
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "8px"
+                    }} 
+                  />
+                  <Bar dataKey="level" fill="hsl(var(--warning))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="shadow-card hover:shadow-glow transition-all duration-300">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-success" />
+              Environmental Data (Temperature, Humidity, Air Quality)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={350}>
+              <LineChart data={environmentalData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: "hsl(var(--card))", 
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px"
+                  }} 
+                />
+                <Legend />
+                <Line type="monotone" dataKey="temperature" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="humidity" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="airQuality" stroke="hsl(var(--success))" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="shadow-card">
