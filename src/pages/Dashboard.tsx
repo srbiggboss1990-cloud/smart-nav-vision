@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3, TrendingUp, AlertTriangle, Activity } from "lucide-react";
 import AIAssistant from "@/components/AIAssistant";
+import { SafetyGame } from "@/components/SafetyGame";
+import { PredictiveAlerts } from "@/components/PredictiveAlerts";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart } from "recharts";
 import { useState, useEffect } from "react";
 
@@ -141,6 +143,12 @@ export default function Dashboard() {
             );
           })}
         </div>
+
+        {/* Predictive Alerts System */}
+        <PredictiveAlerts />
+
+        {/* Safety Game */}
+        <SafetyGame />
 
         <div className="grid gap-6 lg:grid-cols-2">
           <Card className="shadow-card hover:shadow-glow transition-all duration-300">

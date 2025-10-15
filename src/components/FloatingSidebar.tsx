@@ -1,4 +1,4 @@
-import { Home, Map, BarChart3, Cloud, Settings, AlertTriangle, Camera, FileText, Scan } from "lucide-react";
+import { Home, Map, BarChart3, Cloud, Settings, AlertTriangle, Camera, FileText, Trophy } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +10,7 @@ const navItems = [
   { icon: AlertTriangle, href: "/emergency", label: "Emergency" },
   { icon: Camera, href: "/safety", label: "Safety Monitor" },
   { icon: FileText, href: "/sign-reader", label: "Sign Reader" },
-  { icon: Scan, href: "/ar-overlay", label: "AR Overlay" },
+  { icon: Trophy, href: "/achievements", label: "Achievements" },
   { icon: Settings, href: "/settings", label: "Settings" },
 ];
 

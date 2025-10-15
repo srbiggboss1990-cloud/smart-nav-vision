@@ -14,7 +14,7 @@ import Emergency from "./pages/Emergency";
 import Safety from "./pages/Safety";
 import Settings from "./pages/Settings";
 import SignReader from "./pages/SignReader";
-import AROverlay from "./pages/AROverlay";
+import Achievements from "./pages/Achievements";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,7 +38,7 @@ const App = () => (
               <Route path="/emergency" element={<Emergency />} />
               <Route path="/safety" element={<Safety />} />
               <Route path="/sign-reader" element={<SignReader />} />
-              <Route path="/ar-overlay" element={<AROverlay />} />
+              <Route path="/achievements" element={<Achievements />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

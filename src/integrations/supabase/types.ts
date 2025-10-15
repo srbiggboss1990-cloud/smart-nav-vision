@@ -14,7 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      sign_images: {
+        Row: {
+          ai_tags: string[] | null
+          analysis_result: Json | null
+          created_at: string
+          detected_text: string | null
+          id: string
+          image_type: string
+          image_url: string
+          user_id: string | null
+        }
+        Insert: {
+          ai_tags?: string[] | null
+          analysis_result?: Json | null
+          created_at?: string
+          detected_text?: string | null
+          id?: string
+          image_type: string
+          image_url: string
+          user_id?: string | null
+        }
+        Update: {
+          ai_tags?: string[] | null
+          analysis_result?: Json | null
+          created_at?: string
+          detected_text?: string | null
+          id?: string
+          image_type?: string
+          image_url?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_badges: {
+        Row: {
+          badge_name: string
+          badge_type: string
+          earned_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          badge_name: string
+          badge_type: string
+          earned_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          badge_name?: string
+          badge_type?: string
+          earned_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          created_at: string
+          game_score: number | null
+          games_played: number | null
+          id: string
+          pages_visited: string[] | null
+          total_signs_analyzed: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          game_score?: number | null
+          games_played?: number | null
+          id?: string
+          pages_visited?: string[] | null
+          total_signs_analyzed?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          game_score?: number | null
+          games_played?: number | null
+          id?: string
+          pages_visited?: string[] | null
+          total_signs_analyzed?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
