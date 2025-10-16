@@ -47,6 +47,80 @@ export type Database = {
         }
         Relationships: []
       }
+      sos_alerts: {
+        Row: {
+          created_at: string
+          id: string
+          issue_type: string
+          latitude: number
+          longitude: number
+          resolved_at: string | null
+          status: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          issue_type: string
+          latitude: number
+          longitude: number
+          resolved_at?: string | null
+          status?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          issue_type?: string
+          latitude?: number
+          longitude?: number
+          resolved_at?: string | null
+          status?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
+      sos_responses: {
+        Row: {
+          alert_id: string
+          created_at: string
+          id: string
+          message: string | null
+          responder_id: string
+          responder_name: string
+          response_type: string
+        }
+        Insert: {
+          alert_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          responder_id: string
+          responder_name: string
+          response_type: string
+        }
+        Update: {
+          alert_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          responder_id?: string
+          responder_name?: string
+          response_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sos_responses_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "sos_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_badges: {
         Row: {
           badge_name: string
