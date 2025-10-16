@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, TrendingUp, CloudRain, Clock } from "lucide-react";
+import { AlertTriangle, TrendingUp, CloudRain, Clock, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PredictiveAlert {
   id: string;
@@ -10,53 +11,93 @@ interface PredictiveAlert {
   probability: number;
   timeframe: string;
   icon: any;
+  distance?: number;
 }
 
 export function PredictiveAlerts() {
   const [alerts, setAlerts] = useState<PredictiveAlert[]>([]);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Get user location
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        () => {
+          setUserLocation({ lat: 25.2048, lng: 55.2708 }); // Default to Dubai
+        }
+      );
+    } else {
+      setUserLocation({ lat: 25.2048, lng: 55.2708 });
+    }
+  }, []);
 
   useEffect(() => {
-    // Simulate predictive alerts based on patterns
-    const generateAlerts = () => {
+    if (!userLocation) return;
+
+    const generateAlerts = async () => {
       const currentHour = new Date().getHours();
       const newAlerts: PredictiveAlert[] = [];
 
-      // Rush hour traffic prediction
+      try {
+        // Fetch real traffic data from edge function
+        const { data, error } = await supabase.functions.invoke('traffic-data', {
+          body: { 
+            lat: userLocation.lat, 
+            lng: userLocation.lng,
+            radius: 8000 
+          }
+        });
+
+        if (!error && data?.success && data?.incidents) {
+          // Convert incidents to predictive alerts
+          data.incidents
+            .filter((incident: any) => incident.distance < 5)
+            .slice(0, 2)
+            .forEach((incident: any) => {
+              newAlerts.push({
+                id: incident.id,
+                type: incident.type === 'accident' ? 'accident' : 'traffic',
+                message: `${incident.description} detected ${incident.distance.toFixed(1)} km ahead`,
+                location: `${incident.distance.toFixed(1)} km away`,
+                probability: incident.severity === 'high' ? 90 : incident.severity === 'medium' ? 70 : 50,
+                timeframe: 'Now',
+                icon: incident.type === 'accident' ? AlertTriangle : TrendingUp,
+                distance: incident.distance,
+              });
+            });
+        }
+      } catch (err) {
+        console.error('Error fetching traffic data:', err);
+      }
+
+      // Add time-based predictions
       if (currentHour >= 7 && currentHour <= 9) {
         newAlerts.push({
           id: "traffic-morning",
           type: "traffic",
-          message: "Traffic likely to increase near Sheikh Zayed Road in 15 min due to morning rush",
-          location: "Sheikh Zayed Road",
+          message: "Traffic likely to increase in nearby areas in 15 min due to morning rush",
+          location: "Nearby major roads",
           probability: 85,
           timeframe: "Next 15 min",
           icon: TrendingUp,
         });
       }
 
-      // Evening rush prediction
       if (currentHour >= 17 && currentHour <= 19) {
         newAlerts.push({
           id: "traffic-evening",
           type: "traffic",
-          message: "Heavy congestion expected on Dubai-Sharjah Road based on historical patterns",
-          location: "Dubai-Sharjah Road",
+          message: "Heavy congestion expected on major routes based on historical patterns",
+          location: "Major highways",
           probability: 90,
           timeframe: "Next 30 min",
           icon: TrendingUp,
-        });
-      }
-
-      // Accident probability based on weather and time
-      if (currentHour >= 22 || currentHour <= 5) {
-        newAlerts.push({
-          id: "accident-night",
-          type: "accident",
-          message: "Accident probability rising in Al Qusais based on historical trends and low visibility",
-          location: "Al Qusais",
-          probability: 65,
-          timeframe: "Next hour",
-          icon: AlertTriangle,
         });
       }
 
@@ -66,22 +107,22 @@ export function PredictiveAlerts() {
         newAlerts.push({
           id: "weather-impact",
           type: "weather",
-          message: "Rain expected to affect visibility and road conditions on major highways",
-          location: "Major Highways",
+          message: "Weather conditions may affect visibility and road conditions",
+          location: "Current area",
           probability: 75,
           timeframe: "Next 2 hours",
           icon: CloudRain,
         });
       }
 
-      setAlerts(newAlerts);
+      setAlerts(newAlerts.slice(0, 4));
     };
 
     generateAlerts();
-    const interval = setInterval(generateAlerts, 60000); // Update every minute
+    const interval = setInterval(generateAlerts, 45000); // Update every 45 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [userLocation]);
 
   if (alerts.length === 0) return null;
 

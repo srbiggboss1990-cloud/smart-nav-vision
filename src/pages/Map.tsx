@@ -2,49 +2,85 @@ import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Navigation, Satellite, Layers, AlertCircle } from "lucide-react";
+import { Navigation, Satellite, Layers, AlertCircle, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import AIAssistant from "@/components/AIAssistant";
+import { supabase } from "@/integrations/supabase/client";
 
-const TOMTOM_API_KEY = "7e5bf4b9-c4bd-4a84-8b99-8ce536ce8e0f";
+// Declare google maps types
+declare const google: any;
+
+const GOOGLE_MAPS_API_KEY = "AIzaSyDnImjn1Cgg5nJZn1ApfbjO7DZanWTpQ0g";
 
 export default function Map() {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const [mapStyle, setMapStyle] = useState<"street" | "satellite">("street");
+  const [mapStyle, setMapStyle] = useState<"roadmap" | "satellite">("roadmap");
   const [destination, setDestination] = useState("");
   const mapRef = useRef<any>(null);
+  const [incidents, setIncidents] = useState<any[]>([]);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const markersRef = useRef<any[]>([]);
 
+  // Get user location
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+        },
+        () => {
+          // Default to Dubai if location denied
+          setUserLocation({ lat: 25.2048, lng: 55.2708 });
+        }
+      );
+    } else {
+      setUserLocation({ lat: 25.2048, lng: 55.2708 });
+    }
+  }, []);
 
-    // Load TomTom SDK
+  // Load Google Maps
+  useEffect(() => {
+    if (!mapContainer.current || !userLocation) return;
+
     const script = document.createElement('script');
-    script.src = `https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
     script.async = true;
-    
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css';
-    
-    document.head.appendChild(link);
     
     script.onload = () => {
       try {
-        // @ts-ignore
-        const tt = window.tt;
-        
-        mapRef.current = tt.map({
-          key: TOMTOM_API_KEY,
-          container: mapContainer.current,
-          center: [-74.006, 40.7128], // New York
-          zoom: 12,
-          style: mapStyle === "satellite" ? "satellite" : "basic_main"
+        mapRef.current = new google.maps.Map(mapContainer.current!, {
+          center: userLocation,
+          zoom: 13,
+          mapTypeId: mapStyle,
+          styles: mapStyle === "roadmap" ? [
+            { featureType: "poi", stylers: [{ visibility: "off" }] }
+          ] : undefined,
         });
 
-        // Add traffic flow
-        mapRef.current.showTrafficFlow();
+        // Add traffic layer
+        const trafficLayer = new google.maps.TrafficLayer();
+        trafficLayer.setMap(mapRef.current);
+
+        // Add user location marker
+        new google.maps.Marker({
+          position: userLocation,
+          map: mapRef.current,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: "#4285F4",
+            fillOpacity: 1,
+            strokeColor: "#ffffff",
+            strokeWeight: 2,
+          },
+          title: "Your Location",
+        });
         
         toast.success("Live traffic map loaded!");
+        fetchTrafficData();
       } catch (error) {
         console.error("Map initialization error:", error);
         toast.error("Failed to initialize map");
@@ -54,15 +90,91 @@ export default function Map() {
     document.body.appendChild(script);
 
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-      }
+      markersRef.current.forEach(marker => marker.setMap(null));
     };
-  }, []);
+  }, [userLocation]);
+
+  // Fetch traffic incidents
+  const fetchTrafficData = async () => {
+    if (!userLocation) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('traffic-data', {
+        body: { 
+          lat: userLocation.lat, 
+          lng: userLocation.lng,
+          radius: 5000 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.incidents) {
+        setIncidents(data.incidents);
+        plotIncidents(data.incidents);
+      }
+    } catch (error) {
+      console.error('Error fetching traffic data:', error);
+    }
+  };
+
+  // Plot incidents on map
+  const plotIncidents = (incidents: any[]) => {
+    if (!mapRef.current) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
+
+    incidents.forEach((incident) => {
+      const marker = new google.maps.Marker({
+        position: incident.location,
+        map: mapRef.current!,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: incident.severity === 'high' ? '#ef4444' : 
+                     incident.severity === 'medium' ? '#f59e0b' : '#22c55e',
+          fillOpacity: 0.8,
+          strokeColor: '#ffffff',
+          strokeWeight: 2,
+        },
+        title: incident.description,
+      });
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div style="padding: 8px;">
+            <h3 style="font-weight: bold; margin-bottom: 4px;">${incident.description}</h3>
+            <p style="font-size: 12px; color: #666;">Type: ${incident.type}</p>
+            <p style="font-size: 12px; color: #666;">Distance: ${incident.distance.toFixed(2)} km</p>
+            <p style="font-size: 12px; color: #666;">Severity: ${incident.severity}</p>
+          </div>
+        `
+      });
+
+      marker.addListener('click', () => {
+        infoWindow.open(mapRef.current!, marker);
+      });
+
+      markersRef.current.push(marker);
+    });
+  };
+
+  // Update incidents every 30 seconds
+  useEffect(() => {
+    if (!userLocation) return;
+
+    const interval = setInterval(() => {
+      fetchTrafficData();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [userLocation]);
 
   useEffect(() => {
     if (mapRef.current && mapStyle) {
-      mapRef.current.setStyle(mapStyle === "satellite" ? "satellite" : "basic_main");
+      mapRef.current.setMapTypeId(mapStyle);
     }
   }, [mapStyle]);
 
@@ -86,9 +198,9 @@ export default function Map() {
 
         <div className="flex gap-2">
           <Button
-            variant={mapStyle === "street" ? "default" : "outline"}
+            variant={mapStyle === "roadmap" ? "default" : "outline"}
             size="sm"
-            onClick={() => setMapStyle("street")}
+            onClick={() => setMapStyle("roadmap")}
             className="transition-all duration-300"
           >
             <Layers className="h-4 w-4 mr-2" />
@@ -127,18 +239,17 @@ export default function Map() {
             ref={mapContainer}
             className="w-full h-[600px] bg-muted rounded-lg flex items-center justify-center"
           >
-            <div className="text-center space-y-4">
-              <AlertCircle className="h-16 w-16 mx-auto text-primary animate-pulse" />
-              <div>
-                <h3 className="text-xl font-semibold mb-2">Map Loading</h3>
-                <p className="text-muted-foreground">
-                  TomTom API integration required
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Add your TomTom API key to enable live traffic visualization
-                </p>
+            {!userLocation && (
+              <div className="text-center space-y-4">
+                <AlertCircle className="h-16 w-16 mx-auto text-primary animate-pulse" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Loading Map</h3>
+                  <p className="text-muted-foreground">
+                    Initializing Google Maps with live traffic data...
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </Card>
 
@@ -162,16 +273,47 @@ export default function Map() {
           </Card>
 
           <Card className="p-4 shadow-card">
-            <h3 className="font-semibold mb-4">Active Incidents</h3>
-            <div className="space-y-3 text-sm">
-              <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                <p className="font-medium text-destructive">🚧 Road Closure</p>
-                <p className="text-muted-foreground mt-1">Main St & 5th Ave</p>
-              </div>
-              <div className="p-3 bg-warning/10 rounded-lg border border-warning/20">
-                <p className="font-medium text-warning">⚠️ Accident</p>
-                <p className="text-muted-foreground mt-1">Highway 101 North</p>
-              </div>
+            <h3 className="font-semibold mb-4 flex items-center justify-between">
+              Active Incidents
+              <span className="text-xs text-muted-foreground">{incidents.length} nearby</span>
+            </h3>
+            <div className="space-y-3 text-sm max-h-[400px] overflow-y-auto">
+              {incidents.length > 0 ? (
+                incidents.slice(0, 5).map((incident) => (
+                  <div 
+                    key={incident.id}
+                    className={`p-3 rounded-lg border ${
+                      incident.severity === 'high' 
+                        ? 'bg-destructive/10 border-destructive/20' 
+                        : incident.severity === 'medium'
+                        ? 'bg-warning/10 border-warning/20'
+                        : 'bg-success/10 border-success/20'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <MapPin className={`h-4 w-4 mt-0.5 ${
+                        incident.severity === 'high' ? 'text-destructive' :
+                        incident.severity === 'medium' ? 'text-warning' : 'text-success'
+                      }`} />
+                      <div className="flex-1">
+                        <p className={`font-medium ${
+                          incident.severity === 'high' ? 'text-destructive' :
+                          incident.severity === 'medium' ? 'text-warning' : 'text-success'
+                        }`}>
+                          {incident.description}
+                        </p>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          {incident.distance.toFixed(2)} km away • {incident.type}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-muted-foreground py-4">
+                  No incidents nearby
+                </p>
+              )}
             </div>
           </Card>
         </div>
