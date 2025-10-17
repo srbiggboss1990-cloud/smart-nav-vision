@@ -150,4 +150,8 @@ All colors MUST be HSL.
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
   }
+
+  .clip-hexagon {
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
 }
